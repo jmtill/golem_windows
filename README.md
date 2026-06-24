@@ -24,6 +24,24 @@ The installation requires:
 * ``pandas``
 * ``scikit-learn``
 
+### Windows
+Installing from source on Windows requires the [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+(or a full Visual Studio install with the "Desktop development with C++" workload), since `pip install matter-golem`
+falls back to compiling the `golem.extensions` Cython extension from source whenever no prebuilt wheel matches your
+Python version/architecture.
+
+``Golem`` uses `concurrent.futures.ProcessPoolExecutor` for multiprocessing when `nproc > 1`. On Windows, Python's
+multiprocessing uses the `spawn` start method, which re-imports your script's `__main__` module in every worker
+process. Any script that creates a `Golem` instance with `nproc > 1` (directly, or transitively via another package
+that does) **must** guard its entry point:
+```python
+if __name__ == "__main__":
+    main()
+```
+Without this guard, Windows can hang, crash, or recursively re-spawn processes. To reduce the risk of hitting this by
+surprise, ``Golem`` defaults to `nproc=1` on Windows (rather than `cpu_count() - 1` as on Linux/macOS); pass `nproc`
+explicitly once your script's entry point is guarded.
+
 ###  Citation
 ``Golem`` is research software. If you make use of it in scientific publications, please cite the following article:
 

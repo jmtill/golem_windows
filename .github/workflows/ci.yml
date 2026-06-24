@@ -1,4 +1,4 @@
-# This workflow will install Python dependencies and run tests 
+# This workflow will install Python dependencies and run tests
 
 name: build
 
@@ -15,19 +15,28 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.7, 3.8]
+        # ubuntu-latest is kept as the primary, coverage-reporting target.
+        # windows-latest exercises the golem.extensions Cython build under MSVC
+        # (GitHub's windows-latest image ships the MSVC Build Tools needed to
+        # compile it from source) and the Windows-specific behavior in
+        # golem.py/utils.py (default nproc, ANSI color handling).
+        os: [ubuntu-latest, windows-latest]
+        # 3.7 and 3.8 are both EOL upstream; the matrix now tracks supported
+        # CPython versions instead.
+        python-version: ['3.9', '3.10', '3.11']
 
     steps:
-    - uses: actions/checkout@v2
-    
+    - uses: actions/checkout@v4
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        
+
     - name: Install dependencies
       run: |
         pip install --upgrade pip setuptools wheel
@@ -40,13 +49,14 @@ jobs:
     - name: Install package
       run: |
         pip install -e .
-        
+
     - name: Test with pytest
       run: |
         pytest --cov=golem --cov-fail-under=5 --cov-report=xml
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml

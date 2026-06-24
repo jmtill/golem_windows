@@ -109,3 +109,6 @@ venv.bak/
 
 # cython html profile
 src/golem/extensions.html
+
+# manual verification scratch files
+*.tmp

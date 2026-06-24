@@ -1,3 +1,15 @@
 [build-system]
-requires = ["oldest-supported-numpy", "setuptools", "wheel"]
+# NumPy >=2.0 is required at build time (not just runtime): building against the
+# NumPy 2.x C API produces an extension that is ABI-compatible with both NumPy 1.x
+# and 2.x at runtime. The previously used `oldest-supported-numpy` package is
+# deprecated and, as of NumPy 2.0, no longer the recommended way to achieve
+# cross-version compatibility. See:
+# https://numpy.org/doc/stable/dev/depending_on_numpy.html
+#
+# Note: Cython is intentionally NOT listed here. The extension is built from the
+# pre-generated src/golem/extensions.c, not from extensions.pyx directly, so end
+# users installing via pip never need Cython. Maintainers regenerating
+# extensions.c after editing extensions.pyx need `pip install "cython>=3.0"`
+# locally (see CONTRIBUTING note in README).
+requires = ["numpy>=2.0", "setuptools", "wheel"]
 

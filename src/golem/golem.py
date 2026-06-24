@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 from os import cpu_count
 import numpy as np
 import pandas as pd
@@ -12,6 +13,11 @@ from concurrent.futures import ProcessPoolExecutor
 from .extensions import get_bboxes, convolute, Delta
 from .utils import customMutation, create_deap_toolbox, cxDummy, Logger, parse_time
 from .utils import random_sampling, second_sample
+
+# Set to True the first time we emit the Windows-default-nproc warning below, so
+# that creating many Golem instances in a loop/optimization campaign doesn't spam
+# the log with the same message.
+_WARNED_WIN32_NPROC_DEFAULT = False
 
 
 class Golem(object):
@@ -100,18 +106,37 @@ class Golem(object):
         self.random_state = random_state
         self.forest_type = forest_type
 
-        # other options
-        self.nproc = nproc
-        if nproc is None:
-            self._nproc = cpu_count() - 1  # leave 1 CPU free
-        else:
-            self._nproc = nproc
-
         self.verbose = verbose
         if self.verbose is True:
             self.logger = Logger("Golem", 2)
         elif self.verbose is False:
             self.logger = Logger("Golem", 0)
+
+        # other options
+        global _WARNED_WIN32_NPROC_DEFAULT
+        self.nproc = nproc
+        if nproc is None:
+            if sys.platform == 'win32':
+                # Windows uses the `spawn` multiprocessing start method (not `fork`),
+                # which re-imports the __main__ module in each worker process. A
+                # script that doesn't guard its entry point with
+                # `if __name__ == "__main__":` can hang, crash, or recursively
+                # re-spawn when ProcessPoolExecutor is used. Defaulting to nproc=1 on
+                # Windows means multiprocessing is opt-in here, rather than a surprise
+                # failure mode. Pass `nproc` explicitly to use more processes once
+                # your script's entry point is guarded (see the README).
+                self._nproc = 1
+                if not _WARNED_WIN32_NPROC_DEFAULT:
+                    self.logger.log('running on Windows: defaulting to nproc=1 instead of cpu_count()-1. '
+                                     'Pass nproc explicitly to use multiple processes, but make sure your '
+                                     'script\'s entry point is guarded with `if __name__ == "__main__":` '
+                                     '(required by Windows\' "spawn" multiprocessing start method). '
+                                     'See the README for details.', 'WARNING')
+                    _WARNED_WIN32_NPROC_DEFAULT = True
+            else:
+                self._nproc = cpu_count() - 1  # leave 1 CPU free
+        else:
+            self._nproc = nproc
 
     def fit(self, X, y):
         """Fit the tree-based model to partition the input space.

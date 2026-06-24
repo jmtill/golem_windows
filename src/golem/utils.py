@@ -1,9 +1,19 @@
 #!/usr/bin/env python
 
 import numpy as np
+import os
 import sys
 import traceback
 import pandas as pd
+
+# Logger.log() below writes raw ANSI escape codes for colored output. Legacy
+# cmd.exe (without VT100 processing enabled) renders these as garbled text
+# instead of color. Calling os.system('') is a documented no-cost trick that
+# triggers Windows to enable VT100 processing in conhost; it is a no-op on
+# non-Windows platforms and on modern Windows Terminal, which already handles
+# ANSI escapes correctly.
+if sys.platform == 'win32':
+    os.system('')
 
 
 def customMutation(individual, attrs_list, indpb=0.2, continuous_scale=0.1, discrete_scale=0.1):

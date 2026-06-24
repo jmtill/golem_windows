@@ -1,10 +1,12 @@
 # cython: language_level=3
 
-import  cython 
+import  cython
 cimport cython
 
-import  numpy as np 
-cimport numpy as np 
+import  numpy as np
+cimport numpy as np
+
+import math
 
 from libc.math cimport sqrt, erf, exp, floor, abs, INFINITY
 import scipy.special as sc
@@ -1005,7 +1007,7 @@ cdef class Poisson(BaseDist):
             return 0.
         else:
             arg = <int>floor(x - self.low_bound)
-            return (l**(x-self.low_bound) * np.exp(-l)) / np.math.factorial(arg)
+            return (l**(x-self.low_bound) * np.exp(-l)) / math.factorial(arg)
 
     @cython.cdivision(True)
     cpdef double cdf(self, double x, double loc):
@@ -1431,7 +1433,7 @@ cdef class FrozenPoisson:
             return 0.
         else:
             arg = <int>floor(x - self.low_bound)
-            return (self.l**(x - self.low_bound) * np.exp(-self.l)) / np.math.factorial(arg)
+            return (self.l**(x - self.low_bound) * np.exp(-self.l)) / math.factorial(arg)
 
     @cython.cdivision(True)
     cpdef double cdf(self, double x):
